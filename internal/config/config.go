@@ -3,12 +3,24 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
 type Config struct {
 	LogLevel string `env:"LOG_LEVEL" env-default:"info"`
+	DatabaseConfig
+}
+
+type DatabaseConfig struct {
+	ConnString        string        `env:"CONNECTION_STRING" env-required:"true"`
+	MaxConns          int32         `env:"MAX_CONNS" env-default:"25"`
+	MinConns          int32         `env:"MIN_CONNS" env-default:"5"`
+	MaxConnLifeTime   time.Duration `env:"MAX_CONN_LIFETIME" env-default:"1h"`
+	MaxConnIdleTime   time.Duration `env:"MAX_CONN_IDLETIME" env-default:"30m"`
+	HealthCheckPeriod time.Duration `env:"HEALTH_CHECK_PERIOD" env-default:"1m"`
+	ConnectionTimeout time.Duration `env:"CONNECTION_TIMEOUT" env-default:"5s"`
 }
 
 func New() (*Config, error) {
