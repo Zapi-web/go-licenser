@@ -9,8 +9,13 @@ import (
 )
 
 type Config struct {
-	LogLevel string `env:"LOG_LEVEL" env-default:"info"`
+	AppConfig
 	DatabaseConfig
+}
+
+type AppConfig struct {
+	LogLevel   string `env:"LOG_LEVEL" env-default:"info"`
+	PrivateKey string `env:"ED25519_PRIVATE_KEY" env-required:"true"`
 }
 
 type DatabaseConfig struct {
