@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,13 +12,15 @@ import (
 type Licenser struct {
 	repo   LicenserRepository
 	signer Signer
+	kgs    KGS
 	now    func() time.Time
 }
 
-func New(repo LicenserRepository, signer Signer) *Licenser {
+func New(repo LicenserRepository, signer Signer, kgs KGS) *Licenser {
 	return &Licenser{
 		repo:   repo,
 		signer: signer,
+		kgs:    kgs,
 		now:    time.Now,
 	}
 }
@@ -98,24 +101,38 @@ func (l *Licenser) Get(ctx context.Context, key string) (*domain.License, error)
 	return l.repo.Get(ctx, key)
 }
 
-func (l *Licenser) Create(ctx context.Context, key string, hwid *string, expiresAt *time.Time) error {
-	if key == "" {
-		return domain.ErrInvalidInput
+func (l *Licenser) Create(ctx context.Context, hwid *string, expiresAt *time.Time) (*domain.License, error) {
+	if hwid != nil && *hwid == "" {
+		return nil, fmt.Errorf("%w: hwid is empty", domain.ErrInvalidInput)
 	}
-	if expiresAt != nil {
-		if expiresAt.Before(l.now()) {
-			return domain.ErrInvalidInput
+	if expiresAt != nil && expiresAt.Before(l.now()) {
+		return nil, fmt.Errorf("%w: expires_at is in the past", domain.ErrInvalidInput)
+	}
+
+	for range 5 {
+		key, err := l.kgs.GenerateKey()
+		if err != nil {
+			return nil, fmt.Errorf("generate key: %w", err)
 		}
+
+		lic := &domain.License{
+			LicenseKey: key,
+			HWID:       hwid,
+			ExpiresAt:  expiresAt,
+			Status:     domain.StatusActive,
+		}
+
+		err = l.repo.Create(ctx, lic)
+		if errors.Is(err, domain.ErrAlreadyExists) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		return lic, nil
 	}
 
-	license := &domain.License{
-		LicenseKey: key,
-		HWID:       hwid,
-		ExpiresAt:  expiresAt,
-		Status:     domain.StatusActive,
-	}
-
-	return l.repo.Create(ctx, license)
+	return nil, errors.New("failed to generate unique license key")
 }
 
 func (l *Licenser) Revoke(ctx context.Context, key string) error {
