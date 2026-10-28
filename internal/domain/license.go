@@ -5,22 +5,20 @@ import "time"
 type Status string
 
 const (
-	StatusActive    Status = "active"
-	StatusInactive  Status = "inactive"
-	StatusRevoked   Status = "revoked"
-	StatusBanned    Status = "banned"
-	StatusSuspended Status = "suspended"
+	StatusActive   Status = "active"
+	StatusInactive Status = "inactive"
+	StatusRevoked  Status = "revoked"
+	StatusBanned   Status = "banned"
 )
 
 type License struct {
-	ID             string
-	LicenseKey     string
-	Status         Status
-	HWID           *string
-	MaxActivations uint
-	CreatedAt      time.Time
-	ActivatedAt    *time.Time
-	ExpiresAt      *time.Time
+	ID          string
+	LicenseKey  string
+	Status      Status
+	HWID        *string
+	CreatedAt   time.Time
+	ActivatedAt *time.Time
+	ExpiresAt   *time.Time
 }
 
 type LicensePayload struct {

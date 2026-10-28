@@ -56,17 +56,16 @@ func New(ctx context.Context, connString string, cfg Config) (*PGDB, error) {
 	return &PGDB{psql: db}, nil
 }
 
-func (p *PGDB) Set(ctx context.Context, license *domain.License) error {
+func (p *PGDB) Create(ctx context.Context, license *domain.License) error {
 	query := `
-		INSERT INTO licenses (status ,license_key, max_activations, hwid, expires_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO licenses (status ,license_key, hwid, expires_at)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id, created_at
 	`
 
 	err := p.psql.QueryRow(ctx, query,
 		license.Status,
 		license.LicenseKey,
-		license.MaxActivations,
 		license.HWID,
 		license.ExpiresAt,
 	).Scan(&license.ID, &license.CreatedAt)
@@ -80,7 +79,7 @@ func (p *PGDB) Set(ctx context.Context, license *domain.License) error {
 
 func (p *PGDB) Get(ctx context.Context, licenseKey string) (*domain.License, error) {
 	query := `
-		SELECT id, license_key, status, hwid, max_activations, created_at,expires_at, activated_at
+		SELECT id, license_key, status, hwid, created_at,expires_at, activated_at
 		FROM licenses
 		WHERE license_key = $1
 	`
@@ -92,7 +91,6 @@ func (p *PGDB) Get(ctx context.Context, licenseKey string) (*domain.License, err
 		&lic.LicenseKey,
 		&lic.Status,
 		&lic.HWID,
-		&lic.MaxActivations,
 		&lic.CreatedAt,
 		&lic.ExpiresAt,
 		&lic.ActivatedAt,
@@ -109,20 +107,96 @@ func (p *PGDB) Get(ctx context.Context, licenseKey string) (*domain.License, err
 	return &lic, nil
 }
 
-func (p *PGDB) BindHWID(ctx context.Context, licenseID string, hwid string) error {
+func (p *PGDB) BindHWID(ctx context.Context, licenseKey string, hwid string) error {
 	query := `
 		UPDATE licenses
 		SET hwid = $1, activated_at = NOW()
-		WHERE id = $2 AND hwid IS NULL
+		WHERE license_key = $2 AND hwid IS NULL
 	`
-	res, err := p.psql.Exec(ctx, query, hwid, licenseID)
 
+	res, err := p.psql.Exec(ctx, query, hwid, licenseKey)
 	if err != nil {
 		return fmt.Errorf("failed to bind hwid: %w", err)
 	}
 
+	if res.RowsAffected() > 0 {
+		return nil
+	}
+
+	var currentHWID *string
+	checkQuery := `SELECT hwid FROM licenses WHERE license_key = $1`
+	err = p.psql.QueryRow(ctx, checkQuery, licenseKey).Scan(&currentHWID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.ErrNotFound
+		}
+		return fmt.Errorf("failed to verify license state: %w", err)
+	}
+
+	switch {
+	case currentHWID == nil:
+		return domain.ErrConcurrentModification
+	case *currentHWID == hwid:
+		return nil
+	default:
+		return domain.ErrAlreadyBound
+	}
+}
+
+func (p *PGDB) ResetHWID(ctx context.Context, licenseKey string) error {
+	query := `
+		UPDATE licenses
+		SET hwid = NULL, activated_at = NULL
+		WHERE license_key = $1
+	`
+
+	err := p.performQuery(ctx, query, licenseKey)
+	if err != nil {
+		return fmt.Errorf("failed to reset hwid: %w", err)
+	}
+
+	return nil
+}
+
+func (p *PGDB) ExtendExpiry(ctx context.Context, licenseKey string, newExpiresAt time.Time) error {
+	query := `
+		UPDATE licenses
+		SET expires_at = $1
+		WHERE license_key = $2
+	`
+
+	err := p.performQuery(ctx, query, newExpiresAt, licenseKey)
+	if err != nil {
+		return fmt.Errorf("failed to extend expiry: %w", err)
+	}
+
+	return nil
+}
+
+func (p *PGDB) UpdateStatus(ctx context.Context, licenseKey string, newStatus domain.Status) error {
+	query := `
+		UPDATE licenses
+		SET status = $1
+		WHERE license_key = $2
+	`
+
+	err := p.performQuery(ctx, query, newStatus, licenseKey)
+	if err != nil {
+		return fmt.Errorf("failed to update status: %w", err)
+	}
+
+	return nil
+}
+
+func (p *PGDB) performQuery(ctx context.Context, query string, args ...any) error {
+	res, err := p.psql.Exec(ctx, query, args...)
+
+	if err != nil {
+		return err
+	}
+
 	if res.RowsAffected() == 0 {
-		return errors.New("cannot bind hwid: license not found or already bounded")
+		return domain.ErrNotFound
 	}
 
 	return nil
