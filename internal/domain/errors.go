@@ -14,4 +14,5 @@ var (
 	ErrCorruptedKey           = errors.New("private key is corrupted: public key mismatch")
 	ErrAlreadyBound           = errors.New("hwid is already bounded")
 	ErrConcurrentModification = errors.New("license state changed concurrently, retry")
+	ErrAlreadyExists          = errors.New("already exists")
 )

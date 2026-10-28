@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/zapi-web/go-licenser/internal/domain"
 )
@@ -71,7 +72,11 @@ func (p *PGDB) Create(ctx context.Context, license *domain.License) error {
 	).Scan(&license.ID, &license.CreatedAt)
 
 	if err != nil {
-		return fmt.Errorf("failed to insert license to database: %w", err)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return domain.ErrAlreadyExists
+		}
+		return fmt.Errorf("insert license: %w", err)
 	}
 
 	return nil

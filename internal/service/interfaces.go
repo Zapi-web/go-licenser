@@ -19,3 +19,7 @@ type LicenserRepository interface {
 type Signer interface {
 	Sign(license *domain.License) (*domain.SignedLicense, error)
 }
+
+type KGS interface {
+	GenerateKey() (string, error)
+}
