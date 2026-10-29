@@ -1,8 +1,8 @@
 package signer
 
 import (
-	"bytes"
 	"crypto/ed25519"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -15,15 +15,16 @@ import (
 type Ed25519Signer struct {
 	privateKey ed25519.PrivateKey
 	version    int
+	now        func() time.Time
 }
 
-func New(key ed25519.PrivateKey, v int) (*Ed25519Signer, error) {
-	newSigner := &Ed25519Signer{privateKey: key, version: v}
-
-	err := newSigner.Validate()
+func New(key string, v int) (*Ed25519Signer, error) {
+	keyParsed, err := parsePrivateKey(key)
 	if err != nil {
 		return nil, err
 	}
+
+	newSigner := &Ed25519Signer{privateKey: keyParsed, version: v, now: time.Now}
 
 	return newSigner, nil
 }
@@ -36,7 +37,7 @@ func (s *Ed25519Signer) Sign(lic *domain.License) (*domain.SignedLicense, error)
 	payload := domain.LicensePayload{
 		LicenseKey: lic.LicenseKey,
 		HWID:       lic.HWID,
-		IssuedAt:   time.Now().UTC(),
+		IssuedAt:   s.now().UTC(),
 		ExpiresAt:  lic.ExpiresAt,
 		Version:    s.version,
 	}
@@ -56,16 +57,21 @@ func (s *Ed25519Signer) Sign(lic *domain.License) (*domain.SignedLicense, error)
 	return signLicense, nil
 }
 
-func (s *Ed25519Signer) Validate() error {
-	if len(s.privateKey) != ed25519.PrivateKeySize {
-		return domain.ErrInvalidKeySize
+func parsePrivateKey(b64 string) (ed25519.PrivateKey, error) {
+	der, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode ED25519_PRIVATE_KEY: %w", err)
 	}
 
-	expectedKey := ed25519.NewKeyFromSeed(s.privateKey.Seed())
-
-	if !bytes.Equal(s.privateKey, expectedKey) {
-		return domain.ErrCorruptedKey
+	k, err := x509.ParsePKCS8PrivateKey(der)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse ED25519_PRIVATE_KEY as pkcs8: %w", err)
 	}
 
-	return nil
+	priv, ok := k.(ed25519.PrivateKey)
+	if !ok {
+		return nil, errors.New("ED25519_PRIVATE_KEY is not an ed25519 key")
+	}
+
+	return priv, nil
 }

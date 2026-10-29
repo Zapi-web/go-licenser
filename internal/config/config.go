@@ -11,11 +11,16 @@ import (
 type Config struct {
 	AppConfig
 	DatabaseConfig
+	ServerConfig
 }
 
 type AppConfig struct {
 	LogLevel   string `env:"LOG_LEVEL" env-default:"info"`
 	PrivateKey string `env:"ED25519_PRIVATE_KEY" env-required:"true"`
+	Version    int    `env:"VERSION" env-default:"1"`
+	AdminToken string `env:"ADMIN_TOKEN" env-required:"true"`
+	KeyGroups  int    `env:"KEY_GROUPS" env-default:"4"`
+	GroupsLen  int    `env:"KEY_GROUPS_LEN" env-default:"5"`
 }
 
 type DatabaseConfig struct {
@@ -26,6 +31,13 @@ type DatabaseConfig struct {
 	MaxConnIdleTime   time.Duration `env:"MAX_CONN_IDLETIME" env-default:"30m"`
 	HealthCheckPeriod time.Duration `env:"HEALTH_CHECK_PERIOD" env-default:"1m"`
 	ConnectionTimeout time.Duration `env:"CONNECTION_TIMEOUT" env-default:"5s"`
+}
+
+type ServerConfig struct {
+	Port            string        `env:"PORT" env-default:"8080"`
+	ReadTimeout     time.Duration `env:"HTTP_READ_TIMEOUT" env-default:"5s"`
+	WriteTimeout    time.Duration `env:"HTTP_WRITE_TIMEOUT" env-default:"10s"`
+	ShutdownTimeout time.Duration `env:"SERVER_SHUTDOWN_TIMEOUT" env-default:"2s"`
 }
 
 func New() (*Config, error) {

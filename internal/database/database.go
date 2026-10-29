@@ -76,7 +76,7 @@ func (p *PGDB) Create(ctx context.Context, license *domain.License) error {
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return domain.ErrAlreadyExists
 		}
-		return fmt.Errorf("insert license: %w", err)
+		return fmt.Errorf("failed to insert license: %w", err)
 	}
 
 	return nil
