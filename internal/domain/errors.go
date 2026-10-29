@@ -15,4 +15,5 @@ var (
 	ErrAlreadyBound           = errors.New("hwid is already bounded")
 	ErrConcurrentModification = errors.New("license state changed concurrently, retry")
 	ErrAlreadyExists          = errors.New("already exists")
+	ErrUnauthorized           = errors.New("user unauthorized")
 )
