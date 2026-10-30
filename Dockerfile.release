@@ -1,0 +1,8 @@
+FROM gcr.io/distroless/static-debian12:latest
+
+USER 65532:65532
+WORKDIR /app
+
+COPY licenser /app/licenser
+
+ENTRYPOINT [ "/app/licenser" ]
