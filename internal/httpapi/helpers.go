@@ -47,13 +47,16 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, domain.ErrUnauthorized):
 		status, code, msg = http.StatusUnauthorized, "unauthorized", "user is unauthorized"
 	default:
+		// #nosec G706 -- r.URL.Path is escaped by slog.NewJSONHandler
 		slog.Error("internal error", "err", err, "method", r.Method, "path", r.URL.Path)
 		status, code, msg = http.StatusInternalServerError, "internal_error", "internal error"
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(errorResponse{Code: code, Message: msg})
+	if err := json.NewEncoder(w).Encode(errorResponse{Code: code, Message: msg}); err != nil {
+		slog.Error("failed to encode response", "err", err)
+	}
 }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
@@ -61,7 +64,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(dst); err != nil {
-		return fmt.Errorf("%w: %v", domain.ErrInvalidInput, err)
+		return fmt.Errorf("%w: %w", domain.ErrInvalidInput, err)
 	}
 	return nil
 }

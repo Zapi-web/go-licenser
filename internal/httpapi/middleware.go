@@ -39,6 +39,7 @@ func logging(next http.Handler) http.Handler {
 		start := time.Now()
 		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(sw, r)
+		// #nosec G706 -- request fields are escaped by slog.NewJSONHandler
 		slog.Debug("request",
 			"method", r.Method,
 			"route", r.Pattern,
