@@ -6,7 +6,7 @@ import (
 	"github.com/zapi-web/go-licenser/internal/domain"
 )
 
-func (a *API) HandleHealthz(w http.ResponseWriter, r *http.Request) {
+func (a *API) HandleHealthz(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("OK"))
 }
