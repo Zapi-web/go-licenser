@@ -18,8 +18,8 @@ builds:
 
 dockers:
   - image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Version }}-amd64"
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .ShortCommit }}-amd64"
+      - "ghcr.io/{{ tolower .Env.GITHUB_REPOSITORY }}:{{ .Version }}-amd64"
+      - "ghcr.io/{{ tolower .Env.GITHUB_REPOSITORY }}:{{ .ShortCommit }}-amd64"
     dockerfile: Dockerfile.release
     use: buildx
     build_flag_templates:
@@ -30,8 +30,8 @@ dockers:
       - go-licenser
 
   - image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Version }}-arm64"
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .ShortCommit }}-arm64"
+      - "ghcr.io/{{ tolower .Env.GITHUB_REPOSITORY }}:{{ .Version }}-arm64"
+      - "ghcr.io/{{ tolower .Env.GITHUB_REPOSITORY }}:{{ .ShortCommit }}-arm64"
     dockerfile: Dockerfile.release
     use: buildx
     build_flag_templates:
@@ -42,21 +42,23 @@ dockers:
       - go-licenser
 
 docker_manifests:
-  - name_template: "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Version }}"
+  - name_template: "ghcr.io/{{ tolower .Env.GITHUB_REPOSITORY }}:{{ .Version }}"
     image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Version }}-amd64"
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Version }}-arm64"
+      - "ghcr.io/{{ tolower .Env.GITHUB_REPOSITORY }}:{{ .Version }}-amd64"
+      - "ghcr.io/{{ tolower .Env.GITHUB_REPOSITORY }}:{{ .Version }}-arm64"
 
-  - name_template: "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:latest"
+  - name_template: "ghcr.io/{{ tolower .Env.GITHUB_REPOSITORY }}:latest"
     image_templates:
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Version }}-amd64"
-      - "ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Version }}-arm64"
+      - "ghcr.io/{{ tolower .Env.GITHUB_REPOSITORY }}:{{ .Version }}-amd64"
+      - "ghcr.io/{{ tolower .Env.GITHUB_REPOSITORY }}:{{ .Version }}-arm64"
 
 archives:
-  - format: tar.gz
+  - formats:
+      - tar.gz
     format_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
