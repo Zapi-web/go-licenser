@@ -3,4 +3,10 @@ docker-compose.yaml
 Dockerfile
 .git
 .gitignore
-deploy
+deploy/
+.env
+*.env
+*.pem
+*.key
+dist/
+tmp/
