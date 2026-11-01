@@ -15,12 +15,13 @@ type Config struct {
 }
 
 type AppConfig struct {
-	LogLevel   string `env:"LOG_LEVEL" env-default:"info"`
-	PrivateKey string `env:"ED25519_PRIVATE_KEY" env-required:"true"`
-	Version    int    `env:"VERSION" env-default:"1"`
-	AdminToken string `env:"ADMIN_TOKEN" env-required:"true"`
-	KeyGroups  int    `env:"KEY_GROUPS" env-default:"4"`
-	GroupsLen  int    `env:"KEY_GROUPS_LEN" env-default:"5"`
+	LogLevel   string        `env:"LOG_LEVEL" env-default:"info"`
+	PrivateKey string        `env:"ED25519_PRIVATE_KEY" env-required:"true"`
+	Version    int           `env:"VERSION" env-default:"1"`
+	AdminToken string        `env:"ADMIN_TOKEN" env-required:"true"`
+	KeyGroups  int           `env:"KEY_GROUPS" env-default:"4"`
+	GroupsLen  int           `env:"KEY_GROUPS_LEN" env-default:"5"`
+	TokenTTL   time.Duration `env:"TOKEN_TTL" env-default:"168h"`
 }
 
 type DatabaseConfig struct {

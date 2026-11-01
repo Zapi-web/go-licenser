@@ -33,7 +33,7 @@ func run() int {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	ed25519Signer, err := signer.New(cfg.PrivateKey, cfg.Version)
+	ed25519Signer, err := signer.New(cfg.PrivateKey, cfg.TokenTTL, cfg.Version)
 	if err != nil {
 		slog.Error("failed to create signer", "err", err)
 		return 1

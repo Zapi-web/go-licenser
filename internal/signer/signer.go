@@ -14,17 +14,18 @@ import (
 
 type Ed25519Signer struct {
 	privateKey ed25519.PrivateKey
+	ttl        time.Duration
 	version    int
 	now        func() time.Time
 }
 
-func New(key string, v int) (*Ed25519Signer, error) {
+func New(key string, ttl time.Duration, v int) (*Ed25519Signer, error) {
 	keyParsed, err := parsePrivateKey(key)
 	if err != nil {
 		return nil, err
 	}
 
-	newSigner := &Ed25519Signer{privateKey: keyParsed, version: v, now: time.Now}
+	newSigner := &Ed25519Signer{privateKey: keyParsed, version: v, now: time.Now, ttl: ttl}
 
 	return newSigner, nil
 }
@@ -34,11 +35,18 @@ func (s *Ed25519Signer) Sign(lic *domain.License) (*domain.SignedLicense, error)
 		return nil, errors.New("license can not be nil")
 	}
 
+	timeNow := s.now()
+
+	expires := timeNow.Add(s.ttl)
+	if lic.ExpiresAt != nil && lic.ExpiresAt.Before(expires) {
+		expires = *lic.ExpiresAt
+	}
+
 	payload := domain.LicensePayload{
 		LicenseKey: lic.LicenseKey,
 		HWID:       lic.HWID,
-		IssuedAt:   s.now().UTC(),
-		ExpiresAt:  lic.ExpiresAt,
+		IssuedAt:   timeNow.UTC(),
+		ExpiresAt:  &expires,
 		Version:    s.version,
 	}
 

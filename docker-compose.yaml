@@ -7,7 +7,7 @@ services:
     environment:
       - PORT=8080
       - LOG_LEVEL=debug
-      - CONNECTION_STRING=postgres://postgres:${POSTGRES_PASSWORD:?set it in .env}@db:5432/postgres?sslmode=disable
+      - CONNECTION_STRING=postgres://licenser:${POSTGRES_PASSWORD:?set it in .env}@db:5432/licenser?sslmode=disable
       - ED25519_PRIVATE_KEY=${ED25519_PRIVATE_KEY:?set it in .env}
       - ADMIN_TOKEN=${ADMIN_TOKEN:?set it in .env}
       - VERSION=1
@@ -21,7 +21,7 @@ services:
       image: kukymbr/goose-docker:3.26.0
       environment:
         - GOOSE_DRIVER=postgres
-        - GOOSE_DBSTRING=postgres://postgres:${POSTGRES_PASSWORD:?set it in .env}@db:5432/postgres?sslmode=disable
+        - GOOSE_DBSTRING=postgres://licenser:${POSTGRES_PASSWORD:?set it in .env}@db:5432/licenser?sslmode=disable
       volumes:
         - ./deploy/app/migrations:/migrations
       depends_on:
