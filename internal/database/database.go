@@ -227,6 +227,12 @@ func (p *PGDB) performQuery(ctx context.Context, query string, args ...any) erro
 	return nil
 }
 
+func (p *PGDB) Ping(ctx context.Context) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+	return p.psql.Ping(timeoutCtx)
+}
+
 func (p *PGDB) Close() {
 	p.psql.Close()
 }

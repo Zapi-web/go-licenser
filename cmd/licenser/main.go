@@ -59,7 +59,7 @@ func run() int {
 
 	licenserService := service.New(db, ed25519Signer, keyGeneration)
 
-	api := httpapi.New(licenserService, cfg.AdminToken)
+	api := httpapi.New(licenserService, db, cfg.AdminToken)
 	server := httpapi.NewServer(cfg.Port, api.Handler(), cfg.ReadTimeout, cfg.WriteTimeout)
 
 	serverError := make(chan error, 1)

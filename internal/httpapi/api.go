@@ -9,8 +9,9 @@ import (
 )
 
 type API struct {
-	licenser   Licenser
-	adminToken string
+	licenser       Licenser
+	readinessProbe ReadinessProbe
+	adminToken     string
 }
 
 type Licenser interface {
@@ -23,10 +24,15 @@ type Licenser interface {
 	Extend(ctx context.Context, key string, expiresAt time.Time) error
 }
 
-func New(lic Licenser, adminToken string) *API {
+type ReadinessProbe interface {
+	Ping(ctx context.Context) error
+}
+
+func New(lic Licenser, probe ReadinessProbe, adminToken string) *API {
 	return &API{
-		licenser:   lic,
-		adminToken: adminToken,
+		licenser:       lic,
+		readinessProbe: probe,
+		adminToken:     adminToken,
 	}
 }
 
@@ -35,6 +41,7 @@ func (a *API) Handler() http.Handler {
 	admin := a.requireAdmin
 
 	mux.HandleFunc("GET /healthz", a.HandleHealthz)
+	mux.HandleFunc("GET /readyz", a.HandleReadyz)
 	mux.HandleFunc("POST /v1/activate", a.HandleActivate)
 	mux.HandleFunc("POST /v1/renew", a.HandleRenew)
 	mux.Handle("POST /v1/licenses", admin(http.HandlerFunc(a.HandleCreate)))
