@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/zapi-web/go-licenser/internal/domain"
@@ -9,6 +10,17 @@ import (
 func (a *API) HandleHealthz(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("OK"))
+}
+
+func (a *API) HandleReadyz(w http.ResponseWriter, r *http.Request) {
+	err := a.readinessProbe.Ping(r.Context())
+
+	if err != nil {
+		slog.Error("service is unavailable", "err", err)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func (a *API) HandleActivate(w http.ResponseWriter, r *http.Request) {
