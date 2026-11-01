@@ -39,10 +39,11 @@ func New(ctx context.Context, connString string, cfg Config) (*PGDB, error) {
 	config.HealthCheckPeriod = cfg.HealthCheckPeriod
 	config.ConnConfig.ConnectTimeout = cfg.ConnectionTimeout
 
-	config.ConnConfig.RuntimeParams = map[string]string{
-		"application_name": "go-licenser",
-		"timezone":         "UTC",
+	if config.ConnConfig.RuntimeParams == nil {
+		config.ConnConfig.RuntimeParams = map[string]string{}
 	}
+	config.ConnConfig.RuntimeParams["application_name"] = "go-licenser"
+	config.ConnConfig.RuntimeParams["timezone"] = "UTC"
 
 	db, err := pgxpool.NewWithConfig(ctx, config)
 
@@ -117,7 +118,10 @@ func (p *PGDB) BindHWID(ctx context.Context, licenseKey string, hwid string) err
 	query := `
 		UPDATE licenses
 		SET hwid = $1, activated_at = NOW()
-		WHERE license_key = $2 AND hwid IS NULL
+		WHERE license_key = $2
+		  AND hwid IS NULL
+		  AND status = 'active'
+		  AND (expires_at IS NULL OR expires_at > NOW())
 	`
 
 	res, err := p.psql.Exec(ctx, query, hwid, licenseKey)
@@ -129,14 +133,29 @@ func (p *PGDB) BindHWID(ctx context.Context, licenseKey string, hwid string) err
 		return nil
 	}
 
-	var currentHWID *string
-	checkQuery := `SELECT hwid FROM licenses WHERE license_key = $1`
-	err = p.psql.QueryRow(ctx, checkQuery, licenseKey).Scan(&currentHWID)
+	var (
+		currentHWID *string
+		status      string
+		notExpired  bool
+	)
+	checkQuery := `
+		SELECT hwid, status, (expires_at IS NULL OR expires_at > NOW())
+		FROM licenses
+		WHERE license_key = $1
+	`
+	err = p.psql.QueryRow(ctx, checkQuery, licenseKey).Scan(&currentHWID, &status, &notExpired)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.ErrNotFound
 		}
 		return fmt.Errorf("failed to verify license state: %w", err)
+	}
+
+	if status != "active" {
+		return domain.ErrLicenseInactive
+	}
+	if !notExpired {
+		return domain.ErrLicenseExpired
 	}
 
 	switch {
