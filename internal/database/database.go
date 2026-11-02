@@ -151,8 +151,8 @@ func (p *PGDB) BindHWID(ctx context.Context, licenseKey string, hwid string) err
 		return fmt.Errorf("failed to verify license state: %w", err)
 	}
 
-	if status != "active" {
-		return domain.ErrLicenseInactive
+	if err := domain.Status(status).Err(); err != nil {
+		return err
 	}
 	if !notExpired {
 		return domain.ErrLicenseExpired

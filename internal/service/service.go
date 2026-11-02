@@ -16,6 +16,8 @@ type Licenser struct {
 	now    func() time.Time
 }
 
+var errUniqueGeneration = errors.New("failed to generate unique license key")
+
 func New(repo LicenserRepository, signer Signer, kgs KGS) *Licenser {
 	return &Licenser{
 		repo:   repo,
@@ -35,8 +37,7 @@ func (l *Licenser) Activate(ctx context.Context, key, hwid string) (*domain.Sign
 		return nil, err
 	}
 
-	err = checkActive(lic)
-	if err != nil {
+	if err := lic.Status.Err(); err != nil {
 		return nil, err
 	}
 
@@ -69,8 +70,7 @@ func (l *Licenser) Renew(ctx context.Context, key, hwid string) (*domain.SignedL
 		return nil, err
 	}
 
-	err = checkActive(lic)
-	if err != nil {
+	if err := lic.Status.Err(); err != nil {
 		return nil, err
 	}
 
@@ -132,7 +132,7 @@ func (l *Licenser) Create(ctx context.Context, hwid *string, expiresAt *time.Tim
 		return lic, nil
 	}
 
-	return nil, errors.New("failed to generate unique license key")
+	return nil, errUniqueGeneration
 }
 
 func (l *Licenser) Revoke(ctx context.Context, key string) error {
@@ -164,24 +164,9 @@ func (l *Licenser) Extend(ctx context.Context, key string, expiresAt time.Time) 
 		return err
 	}
 
-	if err := checkActive(lic); err != nil {
+	if err := lic.Status.Err(); err != nil {
 		return err
 	}
 
 	return l.repo.ExtendExpiry(ctx, key, expiresAt)
-}
-
-func checkActive(lic *domain.License) error {
-	switch lic.Status {
-	case domain.StatusActive:
-		return nil
-	case domain.StatusRevoked:
-		return domain.ErrLicenseRevoked
-	case domain.StatusBanned:
-		return domain.ErrLicenseBanned
-	case domain.StatusInactive:
-		return domain.ErrLicenseInactive
-	default:
-		return domain.ErrLicenseInactive
-	}
 }

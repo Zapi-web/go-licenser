@@ -11,6 +11,21 @@ const (
 	StatusBanned   Status = "banned"
 )
 
+func (s Status) Err() error {
+	switch s {
+	case StatusActive:
+		return nil
+	case StatusRevoked:
+		return ErrLicenseRevoked
+	case StatusBanned:
+		return ErrLicenseBanned
+	case StatusInactive:
+		return ErrLicenseInactive
+	default:
+		return ErrLicenseInactive
+	}
+}
+
 type License struct {
 	ID          string
 	LicenseKey  string
