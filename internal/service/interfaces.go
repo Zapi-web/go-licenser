@@ -7,6 +7,7 @@ import (
 	"github.com/zapi-web/go-licenser/internal/domain"
 )
 
+//go:generate mockery --name LicenserRepository
 type LicenserRepository interface {
 	Create(ctx context.Context, lic *domain.License) error
 	Get(ctx context.Context, licenseKey string) (*domain.License, error)
@@ -16,10 +17,12 @@ type LicenserRepository interface {
 	UpdateStatus(ctx context.Context, licenseKey string, newStatus domain.Status) error
 }
 
+//go:generate mockery --name Signer
 type Signer interface {
 	Sign(license *domain.License) (*domain.SignedLicense, error)
 }
 
+//go:generate mockery --name KGS
 type KGS interface {
 	GenerateKey() (string, error)
 }
