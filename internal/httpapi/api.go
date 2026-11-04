@@ -14,6 +14,7 @@ type API struct {
 	adminToken     string
 }
 
+//go:generate mockery --name Licenser
 type Licenser interface {
 	Activate(ctx context.Context, key, hwid string) (*domain.SignedLicense, error)
 	Create(ctx context.Context, hwid *string, expiresAt *time.Time) (*domain.License, error)
@@ -24,6 +25,7 @@ type Licenser interface {
 	Extend(ctx context.Context, key string, expiresAt time.Time) error
 }
 
+//go:generate mockery --name ReadinessProbe
 type ReadinessProbe interface {
 	Ping(ctx context.Context) error
 }
