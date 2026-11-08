@@ -1,0 +1,7 @@
+apiVersion: v2
+name: go-licenser
+description: Lightweight, self-hosted software licensing server with Ed25519
+
+type: application
+version: 0.1.0
+appVersion: "1.16.0"

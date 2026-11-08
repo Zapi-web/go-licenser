@@ -1,0 +1,73 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/zapi-web/go-licenser
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+service:
+  port: 8080
+
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+  hosts:
+    - host: go-licenser.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+migrations:
+  enabled: true
+  image:
+    repository: kukymbr/goose-docker
+    tag: "3.26.0"
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 300
+  waitForDb:
+    host: ""
+    port: 5432
+    image: busybox:1.37
+
+env:
+  LOG_LEVEL: info
+  VERSION: "1"
+  KEY_GROUPS: "4"
+  KEY_GROUPS_LEN: "5"
+  TOKEN_TTL: 168h
+  MAX_CONNS: "25"
+  MIN_CONNS: "5"
+  MAX_CONN_LIFETIME: 1h
+  MAX_CONN_IDLETIME: 30m
+  HEALTH_CHECK_PERIOD: 1m
+  CONNECTION_TIMEOUT: 5s
+  HTTP_READ_TIMEOUT: 5s
+  HTTP_WRITE_TIMEOUT: 10s
+  SERVER_SHUTDOWN_TIMEOUT: 2s
+
+secret:
+  ED25519_PRIVATE_KEY: ""
+  ADMIN_TOKEN: ""
+  CONNECTION_STRING: ""
