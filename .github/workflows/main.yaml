@@ -19,3 +19,10 @@ concurrency:
 jobs:
     checks:
         uses: ./.github/workflows/go.yaml
+
+    helm:
+        name: Helm chart
+        needs: checks
+        permissions:
+            contents: read
+        uses: ./.github/workflows/helm.yaml

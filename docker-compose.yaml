@@ -23,7 +23,7 @@ services:
         - GOOSE_DRIVER=postgres
         - GOOSE_DBSTRING=postgres://licenser:${POSTGRES_PASSWORD:?set it in .env}@db:5432/licenser?sslmode=disable
       volumes:
-        - ./deploy/app/migrations:/migrations
+        - ./deploy/go-licenser/migrations:/migrations
       depends_on:
         db:
           condition: service_healthy
