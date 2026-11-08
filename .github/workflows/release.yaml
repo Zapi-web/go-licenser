@@ -26,6 +26,14 @@ jobs:
   tests:
     uses: ./.github/workflows/go.yaml
 
+  helm:
+    name: Helm chart
+    needs: [ validate, tests ]
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/helm.yaml
+
   release:
     needs: [ validate, tests ]
     runs-on: ubuntu-latest
