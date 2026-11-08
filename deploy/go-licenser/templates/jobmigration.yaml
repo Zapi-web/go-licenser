@@ -1,0 +1,57 @@
+{{- if .Values.migrations.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "go-licenser.fullname" . }}-migrations
+  labels:
+    {{- include "go-licenser.labels" . | nindent 4 }}
+data:
+  {{- (.Files.Glob "migrations/*.sql").AsConfig | nindent 2 }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "go-licenser.fullname" . }}-migrations
+  labels:
+    {{- include "go-licenser.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.migrations.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "go-licenser.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      {{- with .Values.migrations.waitForDb.host }}
+      initContainers:
+        - name: wait-postgres
+          image: {{ $.Values.migrations.waitForDb.image | quote }}
+          command:
+            - sh
+            - -c
+            - 'until nc -z -w 2 {{ . }} {{ $.Values.migrations.waitForDb.port }}; do echo waiting for postgres; sleep 3; done'
+      {{- end }}
+      containers:
+        - name: goose
+          image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag }}"
+          env:
+            - name: GOOSE_DRIVER
+              value: postgres
+            - name: GOOSE_DBSTRING
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "go-licenser.fullname" . }}-secret
+                  key: CONNECTION_STRING
+          volumeMounts:
+            - name: migrations
+              mountPath: /migrations
+              readOnly: true
+      volumes:
+        - name: migrations
+          configMap:
+            name: {{ include "go-licenser.fullname" . }}-migrations
+{{- end }}
